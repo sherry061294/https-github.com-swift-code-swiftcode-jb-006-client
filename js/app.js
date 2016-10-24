@@ -34,7 +34,7 @@ app.controller('loginCtrl',['$scope','$location','$http',function($scope,$locati
         $scope.validationMessage=response["message"][0];// response["message"][0] gives the backend error message
       }
       else{
-        sessionStorage.email=response["email"];
+        sessionStorage.email=response["email"];//sessions are active until the browser shuts the process
         sessionStorage.password=response["password"];
         sessionStorage.userId=response["id"];
 
@@ -65,8 +65,6 @@ app.controller('signupCtrl',['$scope','$location','$http',
           sessionStorage.email=response["email"];
           sessionStorage.password=response["password"];
           sessionStorage.userId=response["id"];
-          sessionStorage.firstName=response["firstName"];
-          sessionStorage.lastName=response["lastName"];
 
           $location.url('/dashboard');
         }
@@ -78,7 +76,75 @@ app.controller('signupCtrl',['$scope','$location','$http',
 
   }]);
 
-app.controller('dashboardCtrl',['$scope','$location','$http',
-  function($scope,$location,$http){
+  app.controller('dashboardCtrl',['$scope','$location','$http',function($scope,$location,$http){
+    $scope.update=function(){
+      delete $scope.profileData["connectionRequests"];
+      delete $scope.profileData["connections"];
+      delete $scope.profileData["suggestions"];
+      var request= $http({
+        method: "PUT",
+        url: URL +  "profile/" + sessionStorage.userId,
+        data:$scope.profileData
+      });
+      request.success(function(data){
+        //var response= angular.fromJson(data);//converts from Json to angular format
+        $scope.responseMessage="Update sucessful";
+        $("#dashboardMsgModal").modal('show');
+        $scope.getProfileData();
+      });
+
+      request.error(function(data){
+        console.log(data);
+      });
+
+    }
+    $scope.getProfileData=function(){
+      var request=$http({
+        method: "GET",
+        url: URL + "profile/" + sessionStorage.userId
+      });
+      request.success(function(data){
+        $scope.profileData=angular.fromJson(data);
+        console.log(data);
+      });
+      request.error(function(data){
+        console.log(data);
+      });
+    }
+    $scope.getProfileData();
+   $scope.sendRequest=function(receiverId){
+     var request=$http({
+       method:"POST",
+       url: URL + "request/send/" + sessionStorage.userId + "/" + receiverId
+     });
+     request.success(function(data) {
+       $scope.responseMessage= "Your request has been sent";
+       $("#dashboardMsgModal").modal('show');
+       $scope.getProfileData();
+
+     });
+     request.error(function(data){
+       console.log(data);
+     });
+   }
+   $scope.acceptRequest=function(requestId){
+     var request=$http({
+       method: "POST",
+       url: URL + "request/accept/" + requestId
+     });
+     request.success(function(data){
+       $scope.responseMessage="Friend request accepted";
+       $("#dashboardMsgModal").modal('show');
+       $scope.getProfileData();
+     });
+     request.console.error(function(data){
+       console.log(data);
+     });
+   }
+   $scope.logout=function(){
+     sessionStorage.clear();
+     $location.path("/login");
+   }
+
 
   }]);
